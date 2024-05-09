@@ -2,8 +2,16 @@ from flask import Flask,render_template, request, jsonify
 from pytube import Playlist, YouTube
 from pytube.exceptions import RegexMatchError
 import os
+import threading
+import re
 
 app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 
 @app.route('/api/get_video_info', methods=['POST'])
 def get_video_info():
@@ -40,51 +48,42 @@ def get_video_info():
         return jsonify({"error": str(e)})
 
 
-
-
-def download_video(url, file_path):
-    try:
-        yt = YouTube(url)
-        video_title = yt.title
-        video_file_path = os.path.join(file_path, video_title + '.mp4')
-
-        # Check if the video file already exists
-        if os.path.exists(video_file_path):
-            return {"message": "Video already downloaded", "file_path": video_file_path}
-
-        # Get the highest resolution stream
-        stream = yt.streams.get_highest_resolution()
-
-        # Download the video
-        stream.download(file_path)
-
-        # Return the file path for the downloaded video
-        return {"message": "Video downloaded successfully", "file_path": video_file_path}
-
-    except Exception as e:
-        return {"error": str(e)}
+SAVE_DIRECTORY = "./"
 
 @app.route('/api/download_video', methods=['POST'])
-def api_download_video():
+def download_from_url():
+    data = request.json
+    url = data.get('url')
     try:
-        data = request.json
-        video_url = data.get('url')
-        file_path = data.get('file_path')
-
-        if not video_url or not file_path:
-            return jsonify({"error": "Please provide both video URL and file path"})
-
-        result = download_video(video_url, file_path)
-        return jsonify(result)
-
+        if 'list' in url:
+            download_playlist(url)
+        else:
+            download_video(url)
+        return jsonify({'message': 'Download initiated successfully.'}), 200
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({'error': str(e)}), 500
 
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+def download_playlist(playlist_url):
+    playlist = Playlist(playlist_url)
+    for video_url in playlist.video_urls:
+        threading.Thread(target=download_video, args=(video_url,)).start()
+
+
+def download_video(video_url):
+    try:
+        yt = YouTube(video_url)
+        stream = yt.streams.get_highest_resolution()
+        sanitized_title = re.sub(r'[<>:"/\\|?*]', '', yt.title)
+        if not sanitized_title.endswith('.mp4'):
+            sanitized_title += '.mp4'
+        file_path = os.path.join(SAVE_DIRECTORY, sanitized_title)
+        stream.download(output_path=SAVE_DIRECTORY, filename=sanitized_title)
+    except Exception as e:
+        print("Error:", e)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
