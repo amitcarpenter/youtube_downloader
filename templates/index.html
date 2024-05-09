@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Downloader</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .input-group {
+        display: flex;
+        margin-bottom: 20px;
+      }
+
+      .input-group input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        outline: none;
+      }
+
+      .input-group button {
+        margin-left: 10px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      #video-container {
+        background-color: #f9f9f9;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .video-item {
+        width: 100%;
+        margin: 0px 0;
+        padding: 20px;
+        display: flex;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+      }
+
+      .video-item:hover {
+        transform: translateY(-5px);
+      }
+
+      .video-item img {
+        margin-left: 57px;
+        width: 194px;
+        height: 118px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .video-info {
+        align-items: center;
+        justify-content: center;
+        display: flex;
+      }
+      .video-info h3 {
+        margin-left: 20px;
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .download-button {
+        display: flex;
+        float: right;
+        margin-left: 442px;
+      }
+
+      .download-button button {
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        float: right;
+      }
+
+      .loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: auto;
+      }
+
+      .spinner {
+        border: 8px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container" class="container">
+      <div class="input-group">
+        <input type="text" id="url" placeholder="Enter YouTube URL" />
+        <button onclick="search()">Search</button>
+      </div>
+
+      <div id="video-container"></div>
+      <div class="loader" id="loader" style="display: none">
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <input
+      type="file"
+      id="fileInput"
+      style="display: none"
+      webkitdirectory
+      mozdirectory
+      msdirectory
+      odirectory
+      directory
+    />
+
+    <!-- Validation of the search box -->
+    <script>
+      function isValidYouTubeUrl(url) {
+        var youtubeRegex =
+          /^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
+        return youtubeRegex.test(url);
+      }
+    </script>
+
+    <!-- Get and show Video Details -->
+    <script>
+      function search() {
+        var url = document.getElementById("url").value;
+        if (url.trim() === "") {
+          alert("Please enter a YouTube URL.");
+          return;
+        }
+        if (!isValidYouTubeUrl(url)) {
+          alert("Please enter a valid YouTube URL.");
+          return;
+        }
+
+        document.getElementById("loader").style.display = "block";
+
+        // Show loader and hide container
+        var videoContainer = document.getElementById("video-container");
+        videoContainer.innerHTML = "";
+
+        // Fetch video data from the Flask API
+        fetch(`/api/get_video_info`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: url }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Check if video metadata retrieved successfully or not
+            if (data.hasOwnProperty("error")) {
+              alert("Failed to get video info: " + data.error);
+            } else {
+              // Loop through each video data
+              data.forEach((video, index = 0) => {
+                // Create video item
+                var item = document.createElement("div");
+                item.classList.add("video-item");
+
+                var indexShow = document.createElement("h3");
+                indexShow.textContent = `${index + 1}`;
+                item.appendChild(indexShow);
+
+                // Create video thumbnail
+                var thumbnail = document.createElement("img");
+                thumbnail.src = video.thumbnail_url;
+                thumbnail.alt = video.title;
+                thumbnail.width = 100;
+                thumbnail.height = 100;
+                item.appendChild(thumbnail);
+
+                // Create video info container
+                var videoInfo = document.createElement("div");
+                videoInfo.classList.add("video-info");
+
+                // Display video title
+                var title = document.createElement("h3");
+                title.textContent = `${video.title}`;
+                videoInfo.appendChild(title);
+
+                // Create download button
+                var downloadButton = document.createElement("div");
+                downloadButton.classList.add("download-button");
+                var downloadBtn = document.createElement("button");
+                downloadBtn.textContent = "Download";
+                downloadBtn.onclick = function () {
+                  download(video.url);
+                };
+                downloadButton.appendChild(downloadBtn);
+
+                videoInfo.appendChild(downloadButton);
+
+                item.appendChild(videoInfo);
+
+                videoContainer.appendChild(item);
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          })
+          .finally(() => {
+            // Hide loader and show container after response
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("container").style.display = "block";
+          });
+      }
+    </script>
+
+    <!-- Downlaod Vidoe  -->
+    <script>
+      function download(videoUrl) {
+
+        
+        function handleFileSelect() {
+          document.getElementById("fileInput").click();
+        }
+
+        // Trigger file selection dialog
+        handleFileSelect();
+
+        // Set default folder path and file name
+        document
+          .getElementById("fileInput")
+          .setAttribute("webkitdirectory", "");
+        document.getElementById("fileInput").setAttribute("directory", "");
+        document
+          .getElementById("fileInput")
+          .setAttribute("nwsaveas", getDefaultFilePath());
+
+        // Function to handle file selection
+        document
+          .getElementById("fileInput")
+          .addEventListener("change", function (event) {
+            const folderPath =
+              event.target.files[0].webkitRelativePath.split("/")[0];
+            if (!folderPath) {
+              alert("Failed to get folder path.");
+              return;
+            }
+
+            const formData = new FormData();
+            formData.append("url", videoUrl);
+            formData.append("folder_path", folderPath);
+
+            // Convert FormData to JSON
+            const jsonData = {};
+            formData.forEach((value, key) => {
+              jsonData[key] = value;
+            });
+
+            // Make API request with video URL and folder path
+            fetch("/api/download_video", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(jsonData),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.hasOwnProperty("error")) {
+                  alert("Failed to download video: " + data.error);
+                } else {
+                  alert(
+                    "Video downloaded successfully. File path: " +
+                      data.file_path
+                  );
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          });
+      }
+    </script>
+  </body>
+</html>
