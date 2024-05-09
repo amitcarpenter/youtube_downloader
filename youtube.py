@@ -50,6 +50,7 @@ def get_video_info():
 
 SAVE_DIRECTORY = "./videos/"
 
+
 @app.route('/api/download_video', methods=['POST'])
 def download_from_url():
     data = request.json
