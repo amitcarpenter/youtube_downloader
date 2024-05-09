@@ -79,6 +79,8 @@ def download_video(video_url):
         sanitized_title = re.sub(r'[<>:"/\\|?*]', '', yt.title)
         if not sanitized_title.endswith('.mp4'):
             sanitized_title += '.mp4'
+            
+        print("Senitized titile" , sanitized_title)
         file_path = os.path.join(SAVE_DIRECTORY, sanitized_title)
         stream.download(output_path=SAVE_DIRECTORY, filename=sanitized_title)
     except Exception as e:
