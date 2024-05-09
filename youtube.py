@@ -48,7 +48,7 @@ def get_video_info():
         return jsonify({"error": str(e)})
 
 
-SAVE_DIRECTORY = "./"
+SAVE_DIRECTORY = "./videos/"
 
 @app.route('/api/download_video', methods=['POST'])
 def download_from_url():
