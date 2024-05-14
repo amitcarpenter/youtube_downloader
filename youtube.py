@@ -1,4 +1,4 @@
-from flask import Flask,render_template, request, jsonify
+from flask import Flask,render_template, request, jsonify, send_file
 from pytube import Playlist, YouTube
 from pytube.exceptions import RegexMatchError
 import os
@@ -56,16 +56,15 @@ def download_from_url():
     data = request.json
     url = data.get('url')
     try:
-        if 'list' in url:
-            download_playlist(url)
-        else:
-            download_video(url)
+        # if 'list' in url:
+        #     download_playlist(url)
+        # else:
+        download_video(url)
         return jsonify({'message': 'Download initiated successfully.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
+@app.route('/api/download_all_video', methods=['POST'])
 def download_playlist(playlist_url):
     playlist = Playlist(playlist_url)
     for video_url in playlist.video_urls:
@@ -87,6 +86,14 @@ def download_video(video_url):
     except Exception as e:
         print("Error:", e)
 
+
+@app.route('/video/<filename>', methods=['GET'])
+def serve_video(filename):
+    video_path = os.path.join(SAVE_DIRECTORY, filename)
+    if os.path.isfile(video_path):
+        return send_file(video_path, as_attachment=True)
+    else:
+        return jsonify({'error': 'Video file not found'}), 404
 
 
 if __name__ == '__main__':

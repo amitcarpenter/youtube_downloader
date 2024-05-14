@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YouTube Downloader</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -53,6 +57,7 @@
         border-radius: 10px;
         /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
       }
+
       .video-item {
         width: 100%;
         margin: 0px 0;
@@ -81,6 +86,7 @@
         justify-content: center;
         display: flex;
       }
+
       .video-info h3 {
         margin-left: 20px;
         font-size: 18px;
@@ -128,11 +134,15 @@
       }
     </style>
   </head>
+
   <body>
     <div id="container" class="container">
       <div class="input-group">
         <input type="text" id="url" placeholder="Enter YouTube URL" />
         <button onclick="search()">Search</button>
+        <button id="download_all_btn" style="display: none; background: green">
+          Download All
+        </button>
       </div>
 
       <div id="video-container"></div>
@@ -150,6 +160,27 @@
       odirectory
       directory
     />
+
+    <!-- Bootstrap Modal -->
+    <div
+      class="modal fade"
+      id="downloadModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="downloadModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="downloadModalLabel">
+              Downloading Video
+            </h5>
+          </div>
+          <div class="modal-body">Generating Links ...</div>
+        </div>
+      </div>
+    </div>
 
     <!-- Validation of the search box -->
     <script>
@@ -174,12 +205,8 @@
         }
 
         document.getElementById("loader").style.display = "block";
-
-        // Show loader and hide container
         var videoContainer = document.getElementById("video-container");
         videoContainer.innerHTML = "";
-
-        // Fetch video data from the Flask API
         fetch(`/api/get_video_info`, {
           method: "POST",
           headers: {
@@ -189,68 +216,48 @@
         })
           .then((response) => response.json())
           .then((data) => {
-            // Check if video metadata retrieved successfully or not
             if (data.hasOwnProperty("error")) {
               alert("Failed to get video info: " + data.error);
             } else {
-              // Loop through each video data
+              download_all_btn.addEventListener("click", () => {
+                download_all(url);
+              });
               data.forEach((video, index = 0) => {
-                // Create video item
                 var item = document.createElement("div");
                 item.classList.add("video-item");
 
                 var indexShow = document.createElement("h3");
                 indexShow.textContent = `${index + 1}`;
                 item.appendChild(indexShow);
-
-                // Create video thumbnail
                 var thumbnail = document.createElement("img");
                 thumbnail.src = video.thumbnail_url;
                 thumbnail.alt = video.title;
                 thumbnail.width = 100;
                 thumbnail.height = 100;
                 item.appendChild(thumbnail);
-
-                // Create video info container
                 var videoInfo = document.createElement("div");
                 videoInfo.classList.add("video-info");
-
-                // Display video title
                 var title = document.createElement("h3");
                 title.textContent = `${video.title}`;
                 videoInfo.appendChild(title);
 
-                // Create download button
-                // var downloadButton = document.createElement("div");
-                // downloadButton.classList.add("download-button");
-                // var downloadBtn = document.createElement("button");
-                // downloadBtn.textContent = "Download";
-                // downloadBtn.onclick = function () {
-                //   download(video.url);
-                // };
-                // downloadButton.appendChild(downloadBtn);
-
-                // Create download button
                 var downloadButton = document.createElement("div");
                 downloadButton.classList.add("download-button");
                 var downloadBtn = document.createElement("button");
                 downloadBtn.textContent = "Download";
-                downloadBtn.onclick = function () {
-                  var anchor = document.createElement("a");
-                  anchor.href = "https://dl120.filemate27.shop/?file=M3R4SUNiN3JsOHJ6WWQ2a3NQS1Y5ZGlxVlZIOCtyaGh2WVYvNWtSbVdmNEpnOTFxOXJEbGVwNEtDL2RLN043bk00NGZzQnVJTlBIZmRTN1I4NzEyQjFMVnN2ZG84bnJxbzhzQkRZeFFBRlBkeTZPQ3duUXYzMExRTHAzc1FmMFBPancraGhBbThuTFdsS1NSbkVXOWtpbm9oUmpHU1hSUGsyOU9aS0tWMU04TjlEMk9UcVN2bHJWVjZBZkxwN2dRbjlYTjhTQ2locE1iL2ZrbEcyVWdOcklOa3RHK210V2M0R1pOeGJnNG4yajA3TVB5UThjV1dZRE9QQllrZXdOUm9xU2tiQWtid2ljVzdYKzI5NkZ1eEdsQ1hLRjk2WEMxODdtaVN5cUNkOEc5WXBDS1B2cTg3WTdHdGFzeHIyZnBsSzNLak00R2tBR3JUZmZ2UjhVQTdBcHhoN3FNOE5nandGUDhpQ2tYa3JSTWxtMzRNaDRiZk1kSE8wSURkTVkySkQwbi9KK3krZWd4N2NzS2FVbnN2cFVmTWY4bHZaZlp4SzRTeWl2Zm9ZaHJaVjZSc0NQWkJNbnRWWDk2NzJFSEFtcUZSeGdVbVJsaFBrYmoydz09";
-                  anchor.download = `${video.title}.mp4`;
-                  document.body.appendChild(anchor);
-                  anchor.click();
-                  document.body.removeChild(anchor);
-                };
+                downloadBtn.classList.add("btn", "btn-primary");
+                downloadBtn.setAttribute("data-toggle", "modal");
+                downloadBtn.setAttribute("data-target", "#downloadModal");
+
+                downloadBtn.addEventListener("click", () => {
+                  // $("#downloadModal").modal("show");
+                  download(video);
+                });
+
                 downloadButton.appendChild(downloadBtn);
-
                 videoInfo.appendChild(downloadButton);
-
                 item.appendChild(videoInfo);
-
                 videoContainer.appendChild(item);
-                download(video.url);
               });
             }
           })
@@ -258,7 +265,6 @@
             console.error("Error:", error);
           })
           .finally(() => {
-            // Hide loader and show container after response
             document.getElementById("loader").style.display = "none";
             document.getElementById("container").style.display = "block";
           });
@@ -267,37 +273,112 @@
 
     <!-- Downlaod Vidoe  -->
     <script>
-      function download(videoUrl) {
-        console.log("vidoe Url", videoUrl);
-        const formData = { url: videoUrl };
+      function download(video) {
+        // Show the modal dialog
+        const modalBody = document.querySelector("#downloadModal .modal-body");
+        modalBody.innerHTML = `
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="downloadModalLabel">Downloading Video</h5>
+        </div>
+        <div class="modal-body">Generating Links...</div>
+      </div>
+    </div>
+  `;
+        $("#downloadModal").modal("show");
+
         fetch("/api/download_video", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ url: video.url }),
         })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Network response was not ok");
-            }
-            return response.json();
-          })
+          .then((response) => response.json())
           .then((data) => {
-            console.log(data);
-            if (data.hasOwnProperty("error")) {
-              alert("Failed to download video: " + data.error);
+            if (data.message === "Download initiated successfully.") {
+              $("#downloadModal").modal("show");
+              updateModalBody(data.videoUrl, video.title);
             } else {
-              alert(
-                "Video downloaded successfully. File path: " + data.file_path
-              );
+              console.error(data.error);
             }
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error: " + error.message);
           });
       }
     </script>
+
+    <!-- Function For Show button  -->
+    <script>
+      function updateModalBody(videoUrl, videoTitle) {
+        const modalBody = document.querySelector("#downloadModal .modal-body");
+        modalBody.innerHTML = `
+    <div class="text-center">
+      <a href="#" class="btn btn-primary" onclick="downloadVideo('${videoTitle}')">Download</a>
+    </div>
+  `;
+      }
+
+      function downloadVideo(videoTitle, videoUrl) {
+        let sanitizedTitle = videoTitle.replace(/[<>:"/\\|?*]/g, "");
+        sanitizedTitle = sanitizedTitle.replace(/ /g, "_");
+        if (!sanitizedTitle.endsWith(".mp4")) {
+          sanitizedTitle += ".mp4";
+        }
+
+        const filename = sanitizedTitle;
+        fetch(`/video/${filename}`)
+          .then((response) => {
+            if (response.ok) {
+              return response.blob();
+            } else {
+              throw new Error("Failed to download video");
+            }
+          })
+          .then((blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    </script>
+
+    <!-- Download all -->
+
+    <script>
+      function download_all(videoURL) {
+        fetch("/api/download_all_video", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: videoURL }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message === "Download initiated successfully.") {
+              $("#downloadModal").modal("show");
+              updateModalBody(data.videoUrl, video.title);
+            } else {
+              console.error(data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   </body>
 </html>
