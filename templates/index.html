@@ -273,9 +273,9 @@
             document.getElementById("loader").style.display = "none";
             document.getElementById("container").style.display = "block";
           });
-        download_all_btn.addEventListener("click", () => {
-          download_all(url);
-        });
+        // download_all_btn.addEventListener("click", () => {
+        //   download_all(url);
+        // });
       }
     </script>
 
@@ -362,33 +362,7 @@
       }
     </script>
 
-    <!-- Download all -->
-
     <!-- <script>
-      function download_all(url) {
-        fetch("/api/download_all_video", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url: url }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.message === "Download initiated successfully.") {
-              $("#downloadModal").modal("show");
-              updateModalBody(data.url, video.title);
-            } else {
-              console.error(data.error);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          });
-      }
-    
-    </script> -->
-    <script>
       function download_all(url) {
         document.getElementById("loader").style.display = "block";
         document.getElementById("download_all_btn").style.display = "none";
@@ -421,6 +395,66 @@
           .catch((error) => {
             console.error("Error:", error);
           });
+      }
+    </script> -->
+
+    <script>
+      function download_all(url) {
+        // Show the loader
+        document.getElementById("loader").style.display = "block";
+
+        fetch("/api/download_all_video", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: url }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Hide the loader
+            document.getElementById("loader").style.display = "none";
+
+            if (data.message === "Download initiated successfully.") {
+              const link = document.createElement("a");
+              link.href = data.zipUrl;
+              link.download = data.zipUrl.split("/").pop();
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } else {
+              console.error(data.error);
+              alert("Error: " + data.error);
+            }
+          })
+          .catch((error) => {
+            // Hide the loader in case of an error
+            document.getElementById("loader").style.display = "none";
+            console.error("Error:", error);
+            alert("An unexpected error occurred. Please try again later.");
+          });
+      }
+
+      // Attach event listener to the download all button
+      document
+        .getElementById("download_all_btn")
+        .addEventListener("click", () => {
+          const url = document.getElementById("url").value;
+          if (url.trim() === "") {
+            alert("Please enter a YouTube URL.");
+            return;
+          }
+          if (!isValidYouTubeUrl(url)) {
+            alert("Please enter a valid YouTube URL.");
+            return;
+          }
+          download_all(url);
+        });
+
+      function isValidYouTubeUrl(url) {
+        var youtubeRegex =
+          /^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
+        return youtubeRegex.test(url);
       }
     </script>
 
