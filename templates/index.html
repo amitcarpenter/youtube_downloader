@@ -114,8 +114,8 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
-        margin: auto;
+        height: 15px;
+        margin-left: 15px;
       }
 
       .spinner {
@@ -140,6 +140,9 @@
       <div class="input-group">
         <input type="text" id="url" placeholder="Enter YouTube URL" />
         <button onclick="search()">Search</button>
+        <div class="loader" id="loader" style="display: none">
+          <div class="spinner"></div>
+        </div>
         <button id="download_all_btn" style="display: none; background: green">
           Download All
         </button>
@@ -219,9 +222,6 @@
             if (data.hasOwnProperty("error")) {
               alert("Failed to get video info: " + data.error);
             } else {
-              download_all_btn.addEventListener("click", () => {
-                download_all(url);
-              });
               data.forEach((video, index = 0) => {
                 var item = document.createElement("div");
                 item.classList.add("video-item");
@@ -258,6 +258,7 @@
                 videoInfo.appendChild(downloadButton);
                 item.appendChild(videoInfo);
                 videoContainer.appendChild(item);
+                download_all_btn.style.display = "block";
               });
             }
           })
@@ -268,6 +269,9 @@
             document.getElementById("loader").style.display = "none";
             document.getElementById("container").style.display = "block";
           });
+        download_all_btn.addEventListener("click", () => {
+          download_all(url);
+        });
       }
     </script>
 
@@ -316,12 +320,15 @@
         const modalBody = document.querySelector("#downloadModal .modal-body");
         modalBody.innerHTML = `
     <div class="text-center">
-      <a href="#" class="btn btn-primary" onclick="downloadVideo('${videoTitle}')">Download</a>
+      <a href="#" class="btn btn-primary" onclick="downloadVideo('${videoTitle.replace(
+        /'/g,
+        "\\'"
+      )}')">Download</a>
     </div>
   `;
       }
 
-      function downloadVideo(videoTitle, videoUrl) {
+      function downloadVideo(videoTitle) {
         let sanitizedTitle = videoTitle.replace(/[<>:"/\\|?*]/g, "");
         sanitizedTitle = sanitizedTitle.replace(/ /g, "_");
         if (!sanitizedTitle.endsWith(".mp4")) {
@@ -353,22 +360,58 @@
 
     <!-- Download all -->
 
-    <script>
-      function download_all(videoURL) {
+    <!-- <script>
+      function download_all(url) {
         fetch("/api/download_all_video", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ url: videoURL }),
+          body: JSON.stringify({ url: url }),
         })
           .then((response) => response.json())
           .then((data) => {
             if (data.message === "Download initiated successfully.") {
               $("#downloadModal").modal("show");
-              updateModalBody(data.videoUrl, video.title);
+              updateModalBody(data.url, video.title);
             } else {
               console.error(data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    
+    </script> -->
+    <script>
+      function download_all(url) {
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("download_all_btn").style.display = "none";
+        fetch("/api/download_all_video", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: url }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message === "Download initiated successfully.") {
+              const link = document.createElement("a");
+              link.href = data.zipUrl;
+              link.download = data.zipUrl.split("/").pop();
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              document.getElementById("loader").style.display = "none";
+              document.getElementById("download_all_btn").style.display =
+                "block";
+            } else {
+              alert("this option is not valid for this video");
+
+              console.error(data.error);
+              document.getElementById("loader").style.display = "none";
             }
           })
           .catch((error) => {
